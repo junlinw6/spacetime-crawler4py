@@ -1,5 +1,6 @@
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
+from bs4 import BeautifulSoup
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -15,7 +16,27 @@ def extract_next_links(url, resp):
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
-    return list()
+    """
+    Parses the web page and extracts valid URLs from the response.
+    """
+    if resp.status != 200 or not resp.raw_response.content:
+        return []
+    """
+    Extracts hyperlinks from the response content.
+    """
+    links = []
+    try:
+        soup = BeautifulSoup(resp.raw_response.content, 'html.parser')
+        for anchor in soup.find_all('a', href=True):
+            href = anchor['href']
+            # Convert relative URLs to absolute URLs
+            full_url = urljoin(url, href)
+            # Remove fragment identifiers (e.g., #section)
+            full_url = full_url.split('#')[0]
+            links.append(full_url)
+    except Exception as e:
+        print(f"Error parsing links from {url}: {e}")
+    return links
 
 def is_valid(url):
     # Decide whether to crawl this url or not. 
@@ -25,7 +46,14 @@ def is_valid(url):
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
             return False
-        return not re.match(
+    
+     # Only allow URLs from specific UCI domains
+        if not re.match(
+            r".*\.(ics\.uci\.edu|cs\.uci\.edu|informatics\.uci\.edu|stat\.uci\.edu|today\.uci\.edu).*",
+            parsed.netloc):
+            return False
+
+        if re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
             + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
@@ -33,8 +61,15 @@ def is_valid(url):
             + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
             + r"|epub|dll|cnf|tgz|sha1"
             + r"|thmx|mso|arff|rtf|jar|csv"
-            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
-
+            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower()):
+            return False
+    
+        #Checks for traps
+        if re.search(r'(calendar|page|sort|refid)=', parsed.query.lower()):
+            return False
+    
+        return True
+        
     except TypeError:
         print ("TypeError for ", parsed)
         raise
