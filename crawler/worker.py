@@ -1,4 +1,4 @@
-from threading import Thread
+from threading import Thread, Lock
 
 from inspect import getsource
 from utils.download import download
@@ -7,8 +7,7 @@ import scraper
 import time
 
 # Added content
-from scraper import custom_hash, compute_simhash, hamming_distance, extract_text_from_html
-from threading import Thread, Lock
+from urllib.parse import urlparse
 checksums = set()
 simhashes = []
 similarity_threshold = 3
@@ -53,8 +52,8 @@ class Worker(Thread):
                         self.logger.info(f"Page at {tbd_url} is a near-duplicate. Skipping.")
                         self.frontier.mark_url_complete(tbd_url)
                         continue
-			
-		    checksums.add(checksum)
+		
+                    checksums.add(checksum)
                     simhashes.append(simhash)
 
 

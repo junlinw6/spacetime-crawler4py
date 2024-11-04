@@ -2,7 +2,19 @@ import re
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup
 
+def has_sufficient_text(content):
+    soup = BeautifulSoup(content, 'html.parser')
+    text = soup.get_text(separator=' ', strip=True)
+    words = text.split()
+    return len(words) > 20 # 假设50个单词以上视为有足够内容
+
 def scraper(url, resp):
+    if resp.status != 200 or not resp.raw_response.content:
+        return []
+    
+    if not has_sufficient_text(resp.raw_response.content):
+        return [] #页面内容过少时直接跳过
+
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
 
@@ -16,14 +28,12 @@ def extract_next_links(url, resp):
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
-    """
-    Parses the web page and extracts valid URLs from the response.
-    """
+    
+    # Parses the web page and extracts valid URLs from the response.
     if resp.status != 200 or not resp.raw_response.content:
         return []
-    """
-    Extracts hyperlinks from the response content.
-    """
+
+    # Extracts hyperlinks from the response content.
     links = []
     try:
         soup = BeautifulSoup(resp.raw_response.content, 'html.parser')
