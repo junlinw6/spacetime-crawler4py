@@ -59,7 +59,8 @@ def is_valid(url):
     
      # Only allow URLs from specific UCI domains
         if not re.match(
-            r".*\.(ics\.uci\.edu|cs\.uci\.edu|informatics\.uci\.edu|stat\.uci\.edu|today\.uci\.edu).*",
+            r".*\.(ics\.uci\.edu|cs\.uci\.edu|informatics\.uci\.edu|stat\.uci\.edu|today\.uci\.edu).*"
+            r"|today\.uci\.edu\/department\/information_computer_sciences\/",
             parsed.netloc):
             return False
 
