@@ -2,6 +2,48 @@ import re
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup
 
+def custom_hash(text):
+    #计算文本的简单哈希值
+    return hash(text)
+
+def compute_simhash(text):
+    #计算文本的 simhash
+    words = text.split()
+    hash_bits = [0] * 64  # 假设使用 64 位
+
+    for word in words:
+        word_hash = custom_hash(word)
+        for i in range(64):
+            bit = (word_hash >> i) & 1
+            if bit == 1:
+                hash_bits[i] += 1
+            else:
+                hash_bits[i] -= 1
+
+    # 将 hash_bits 转换为 simhash
+    simhash = 0
+    for i in range(64):
+        if hash_bits[i] > 0:
+            simhash |= (1 << i)
+
+    return simhash
+
+def hamming_distance(hash1, hash2):
+    #计算两个 simhash 值之间的汉明距离
+    x = hash1 ^ hash2  # 异或操作，找出不同的位
+    distance = 0
+    while x:
+        distance += x & 1
+        x >>= 1
+    return distance
+
+def extract_text_from_html(html_content):
+    #从 HTML 内容中提取纯文本
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(html_content, 'html.parser')
+    return soup.get_text()
+
+
 def has_sufficient_text(content):
     soup = BeautifulSoup(content, 'html.parser')
     text = soup.get_text(separator=' ', strip=True)
@@ -17,6 +59,7 @@ def scraper(url, resp):
 
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
+
 
 def extract_next_links(url, resp):
     # Implementation required.
